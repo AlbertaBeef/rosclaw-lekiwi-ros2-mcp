@@ -246,6 +246,40 @@ class LeKiwiROS2Bridge(Node):
             self.get_logger().error(f"Failed to publish arm command: {e}")
             return False
 
+    async def publish_arm_trajectory(
+        self,
+        target_positions: Dict[str, float],
+        duration: float = 2.0,
+        rate_hz: float = 50.0,
+    ) -> bool:
+        """
+        Smoothly move arm from current position to target by publishing
+        interpolated waypoints. Uses publish_arm_command which handles
+        gripper inversion.
+        """
+        current = {}
+        arm_state = self.get_arm_state()
+        if arm_state and arm_state.joint_names:
+            current = dict(zip(arm_state.joint_names, arm_state.joint_positions))
+        else:
+            current = dict(SO101ROS2Bridge.HOME_POSITION)
+
+        full_target = dict(current)
+        full_target.update(target_positions)
+
+        num_points = max(2, int(duration * rate_hz))
+        trajectory = SO101ROS2Bridge._interpolate_positions(
+            current, full_target, num_points
+        )
+
+        interval = 1.0 / rate_hz
+        for waypoint in trajectory:
+            if not self.publish_arm_command(waypoint):
+                return False
+            await asyncio.sleep(interval)
+
+        return True
+
     def validate_base_velocity(
         self, vx: float, vy: float, omega: float
     ) -> Tuple[bool, str]:
@@ -421,10 +455,18 @@ async def stop_base() -> str:
 
 
 @mcp.tool()
-async def move_arm_to_home() -> str:
-    """Move SO-101 arm to home position (all joints at zero)."""
+async def move_arm_to_home(speed: float = 1.0) -> str:
+    """
+    Move SO-101 arm to home position (all joints at zero).
+
+    Args:
+        speed: Movement speed scale (0.1 to 1.0)
+    """
     if _bridge is None:
         return "Error: Not connected to LeKiwi"
+
+    if not (0.1 <= speed <= 1.0):
+        return "Error: Speed must be between 0.1 and 1.0"
 
     valid, msg = _bridge.validate_arm_positions(SO101ROS2Bridge.HOME_POSITION)
     if not valid:
@@ -434,9 +476,12 @@ async def move_arm_to_home() -> str:
     if not safe:
         return fw_msg
 
-    success = _bridge.publish_arm_command(SO101ROS2Bridge.HOME_POSITION)
+    duration = 2.0 / speed
+    success = await _bridge.publish_arm_trajectory(
+        SO101ROS2Bridge.HOME_POSITION, duration=duration
+    )
     if success:
-        return "Moving arm to home position"
+        return "Moved to home position"
     return "Failed to send command"
 
 
@@ -464,7 +509,7 @@ async def move_arm_joint(joint_name: str, target_position: float, speed: float =
     if not (0.1 <= speed <= 1.0):
         return "Error: Speed must be between 0.1 and 1.0"
 
-    # Build full command from current state + target override
+    # Build full target from current state + target override
     arm_state = _bridge.get_arm_state()
     if arm_state:
         positions = dict(zip(arm_state.joint_names, arm_state.joint_positions))
@@ -477,9 +522,11 @@ async def move_arm_joint(joint_name: str, target_position: float, speed: float =
     if not safe:
         return fw_msg
 
-    success = _bridge.publish_arm_command(positions)
+    duration = 2.0 / speed
+    success = await _bridge.publish_arm_trajectory(
+        {joint_name: target_position}, duration=duration
+    )
     if success:
-        await asyncio.sleep(2.0 / speed)
         return f"Moved {joint_name} to {target_position:.3f} rad"
     return "Failed to send command"
 
@@ -507,9 +554,9 @@ async def move_arm_joints(positions: Dict[str, float], speed: float = 1.0) -> st
     if not safe:
         return fw_msg
 
-    success = _bridge.publish_arm_command(positions)
+    duration = 2.0 / speed
+    success = await _bridge.publish_arm_trajectory(positions, duration=duration)
     if success:
-        await asyncio.sleep(3.0 / speed)
         return f"Moved {len(positions)} joints"
     return "Failed to send command"
 

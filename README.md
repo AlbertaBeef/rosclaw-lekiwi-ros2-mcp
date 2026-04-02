@@ -27,7 +27,7 @@ LLM Agent  ──MCP──►  rosclaw-lekiwi-ros2-mcp  ──ROS2──►  lek
 ## Installation
 
 ```bash
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 
 # Install SO-101 dependency first
 cd ../rosclaw-so101-ros2-mcp && pip install -e .
@@ -49,7 +49,7 @@ ros2 run lekiwi_hw_interface lekiwi_motor_bridge --ros-args \
 ## Run as MCP Server
 
 ```bash
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 python src/lekiwi_mcp_server.py
 ```
 
