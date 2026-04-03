@@ -131,7 +131,7 @@ Depends on: rosclaw-so101-ros2-mcp (SO101ROS2Bridge, SO101State)
 
 ## License
 
-MIT License
+Apache 2.0
 
 ## Part of ROSClaw
 

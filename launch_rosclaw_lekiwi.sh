@@ -20,6 +20,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROSCLAW_DIR="$(dirname "$SCRIPT_DIR")"
 SPECS_DIR="$SCRIPT_DIR/specs"
+SO101_SPECS_DIR="$ROSCLAW_DIR/rosclaw-so101-ros2-mcp/specs"
 LEKIWI_ROS2_DIR="$ROSCLAW_DIR/lekiwi_ros2"
 VENV="$HOME/rosclaw-venv"
 
@@ -71,6 +72,8 @@ cleanup() {
             wait "$pid" 2>/dev/null
         fi
     done
+    # Remove runtime symlink to SO-101 specs
+    rm -f "$SPECS_DIR/so_arm101"
     echo "All processes stopped."
 }
 trap cleanup EXIT INT TERM
@@ -98,6 +101,14 @@ fi
 if [ ! -r "$PORT" ] || [ ! -w "$PORT" ]; then
     echo "WARNING: No permission on $PORT — trying sudo chmod..."
     sudo chmod 666 "$PORT"
+fi
+
+# Link SO-101 arm model from its own package (runtime only, cleaned up on exit)
+if [ -d "$SO101_SPECS_DIR/so_arm101" ]; then
+    ln -sfn "$SO101_SPECS_DIR/so_arm101" "$SPECS_DIR/so_arm101"
+else
+    echo "WARNING: SO-101 specs not found at $SO101_SPECS_DIR/so_arm101"
+    echo "         Install rosclaw-so101-ros2-mcp alongside this package."
 fi
 
 echo "======================================"

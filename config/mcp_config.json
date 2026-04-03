@@ -4,7 +4,7 @@
       "command": "bash",
       "args": [
         "-c",
-        "source /opt/ros/humble/setup.bash && python src/lekiwi_mcp_server.py"
+        "source /opt/ros/jazzy/setup.bash && python src/lekiwi_mcp_server.py"
       ],
       "transportType": "stdio",
       "description": "LeKiwi Mobile Base + SO-101 Arm ROS2 MCP Server"

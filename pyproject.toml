@@ -28,7 +28,7 @@ dependencies = [
 [project.optional-dependencies]
 ros2 = [
     # rclpy is installed via ROS2 distribution
-    # source /opt/ros/humble/setup.bash
+    # source /opt/ros/jazzy/setup.bash
 ]
 dev = [
     "pytest>=7.0",
