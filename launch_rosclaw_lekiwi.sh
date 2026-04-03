@@ -72,8 +72,6 @@ cleanup() {
             wait "$pid" 2>/dev/null
         fi
     done
-    # Remove runtime symlink to SO-101 specs
-    rm -f "$SPECS_DIR/so_arm101"
     echo "All processes stopped."
 }
 trap cleanup EXIT INT TERM
@@ -103,12 +101,14 @@ if [ ! -r "$PORT" ] || [ ! -w "$PORT" ]; then
     sudo chmod 666 "$PORT"
 fi
 
-# Link SO-101 arm model from its own package (runtime only, cleaned up on exit)
-if [ -d "$SO101_SPECS_DIR/so_arm101" ]; then
-    ln -sfn "$SO101_SPECS_DIR/so_arm101" "$SPECS_DIR/so_arm101"
-else
-    echo "WARNING: SO-101 specs not found at $SO101_SPECS_DIR/so_arm101"
-    echo "         Install rosclaw-so101-ros2-mcp alongside this package."
+# Link SO-101 arm model from its own package (if not already linked)
+if [ ! -e "$SPECS_DIR/so_arm101" ]; then
+    if [ -d "$SO101_SPECS_DIR/so_arm101" ]; then
+        ln -sn "$SO101_SPECS_DIR/so_arm101" "$SPECS_DIR/so_arm101"
+    else
+        echo "WARNING: SO-101 specs not found at $SO101_SPECS_DIR/so_arm101"
+        echo "         Install rosclaw-so101-ros2-mcp alongside this package."
+    fi
 fi
 
 echo "======================================"
